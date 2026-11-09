@@ -16,7 +16,7 @@
   --bg:#f3f5f8; --surface:#ffffff; --ink:#14202e; --muted:#5a6878; --line:#dfe4ea; --weekend:#eef1f5;
   --accent:#1d3557; --accent-ink:#ffffff; --warn:#c77a0a; --over:#c62f2f; --ok:#1d3557;
   --d1:#1a7f52; --d2:#1f4e9c; --d3:#b85f0c; --d4:#6b4bc4; --d5:#c23a32; --d6:#0f8585; --d0:#b83f84;
-  --t-mm:#1a7f52; --t-tt:#2a6fc4; --t-ww:#b85f0c; --t-th:#6b4bc4; --t-cf:#c23a32; --t-wk:#0f8585; --t-so:#b83f84; --t-ot:#5d6672;
+  --t-mon:#1a7f52; --t-tue:#1f4e9c; --t-wed:#b85f0c; --t-thu:#6b4bc4; --t-fri:#c23a32; --t-sat:#0f8585; --t-sun:#b83f84; --t-so:#b83f84; --t-ot:#5d6672;
   --font-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
   --font-body:'Hanken Grotesk','Segoe UI',system-ui,sans-serif;
   --font-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
@@ -121,9 +121,6 @@ h1{font-family:var(--font-display);font-weight:700;font-size:28px;letter-spacing
 .bar{position:absolute;top:5px;height:24px;border-radius:6px;background:var(--c);color:#fff;font-size:11px;font-weight:600;padding:0 7px;display:flex;align-items:center;white-space:nowrap;overflow:hidden;border:0;text-align:left;z-index:1}
 .bar.tent{opacity:.7;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.28) 0 4px,transparent 4px 8px);outline:1.5px dashed rgba(0,0,0,.35);outline-offset:-1.5px}
 .bar.f-draw{box-shadow:inset -5px 0 0 rgba(255,255,255,.9)}
-.bar.f-penny{background:#2a6fc4;color:#fff}
-.pill.f-penny{background:#2a6fc4;color:#fff}
-.swatch.f-penny{background:#2a6fc4;color:#fff}
 .bar.auto{outline:2px dotted rgba(255,255,255,.92);outline-offset:-4px}.bar.auto.f-free{outline-color:rgba(0,0,0,.5)}
 .pill.auto{outline:2px dotted rgba(255,255,255,.92);outline-offset:-4px}.pill.auto.f-free{outline-color:rgba(0,0,0,.5)}
 .swatch.auto{outline:2px dotted rgba(255,255,255,.92);outline-offset:-3px}
@@ -200,6 +197,8 @@ h1{font-family:var(--font-display);font-weight:700;font-size:28px;letter-spacing
 .dlg pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;max-height:200px;font-size:11px;font-family:var(--font-mono);margin:6px 0}
 label.btn{display:inline-block}
 .stat{font-size:13px;font-weight:600}
+.bar.f-fund,.pill.f-fund,.swatch.f-fund{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.22) 0 6px,transparent 6px 12px)}
+.bar.cat-penny{background:#2a6fc4;color:#fff;box-shadow:none}.pill.cat-penny{background:#2a6fc4;color:#fff;box-shadow:none}.swatch.cat-penny{background:#2a6fc4;color:#fff}
 #addBtn,#shareBtn,[data-add],[data-addday]{display:none!important}.bar,.pill{cursor:default}</style>
 </head>
 <body>
@@ -236,6 +235,7 @@ label.btn{display:inline-block}
     <label class="ctl" for="groupBy">Group rows by
       <select id="groupBy"><option value="launch" selected>Launch day</option><option value="end">End day</option><option value="theme">Theme</option></select>
     </label>
+    <label class="ctl" for="weekSel">Only show week <select id="weekSel"></select></label>
     <label class="ctl" for="gridBy">Week grid places comps by
       <select id="gridBy"><option value="both" selected>Launch and end date</option><option value="end">End date only</option><option value="launch">Launch date only</option></select>
     </label>
@@ -244,6 +244,7 @@ label.btn{display:inline-block}
     <label class="ctl" for="drop"><input id="drop" type="checkbox"> Show dropped</label>
   </div>
   <div class="fchips" id="fchips"></div>
+  <div class="fchips" id="cchips" style="margin-top:8px"></div>
   <div class="fchips" id="dchips" style="margin-top:8px"></div>
   <div class="legend" id="legend"></div>
 
@@ -260,7 +261,7 @@ label.btn{display:inline-block}
     <div class="two">
       <label class="f" for="fTheme">Theme<select id="fTheme"></select></label>
       <label class="f" for="fFormat">Format<select id="fFormat"></select></label>
-      <label class="f" for="fDraw">Draw type<select id="fDraw"></select></label>
+      <label class="f" for="fCat">Category<select id="fCat"></select></label>
       <label class="f" for="fTicket">Ticket price<input id="fTicket" type="text" maxlength="20" placeholder="e.g. 9p or £1.99"></label>
       <label class="f" for="fMax">Max entries<input id="fMax" type="number" min="0" step="1" placeholder="e.g. 5000"></label>
     </div>
@@ -355,30 +356,60 @@ setTimeout(function(){ if(!window.__plannerBooted) __showErr('The page code did 
 window.__step='start';
 const SEED = [];
 const THEMES = [
-  {id:'mm',name:'Monday Scratch'},{id:'tt',name:'Penny Sweet'},{id:'ww',name:'Wednesday Coin Drop'},
-  {id:'th',name:'Hero campaign'},{id:'cf',name:'Friday Spin'},{id:'wk',name:'Prize Every Time'},
-  {id:'so',name:'Free giveaway'},{id:'ot',name:'Auto draw'}
+  {id:'mon',name:'Money Mondays'},{id:'tue',name:'Travel Tuesday'},{id:'wed',name:'Whopper Wednesdays'},
+  {id:'thu',name:'Tech Thursdays'},{id:'fri',name:'99c Car Friday'},{id:'sat',name:'Saturday'},{id:'sun',name:'Sunday'}
 ];
-const FORMATS = ['Instant win','Final draw','Free giveaway','Penny Sweet'];
-const FID = {'Instant win':'iw','Final draw':'draw','Free giveaway':'free','Penny Sweet':'penny'};
+const THEME_BY_DAY = {1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat',0:'sun'};
+const FORMATS = ['Free Giveaway','Instant Win','Final Draw','Fundraiser'];
+const FID = {'Instant Win':'iw','Final Draw':'draw','Free Giveaway':'free','Fundraiser':'fund'};
 const ICON = {
-  'Instant win':'<svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M9.5 0.5 3 9h4l-1 6.5L13 7H9z"/></svg>',
-  'Final draw':'<svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M4 1h8v4.2A4 4 0 0 1 8.9 9v2H11v2.5H5V11h2.1V9A4 4 0 0 1 4 5.2zM2 2.5h1.5v2.2A1.8 1.8 0 0 1 2 3zm12 0h-1.5v2.2A1.8 1.8 0 0 0 14 3z"/></svg>',
+  'Instant Win':'<svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M9.5 0.5 3 9h4l-1 6.5L13 7H9z"/></svg>',
+  'Final Draw':'<svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M4 1h8v4.2A4 4 0 0 1 8.9 9v2H11v2.5H5V11h2.1V9A4 4 0 0 1 4 5.2zM2 2.5h1.5v2.2A1.8 1.8 0 0 1 2 3zm12 0h-1.5v2.2A1.8 1.8 0 0 0 14 3z"/></svg>',
+  'Fundraiser':'<svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M8 14.2 2.2 8.6A3.7 3.7 0 0 1 8 3.6a3.7 3.7 0 0 1 5.8 5z"/></svg>',
   'Penny Sweet':'<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>',
-  'Free giveaway':'<svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M1.5 5.5h13v3h-13zM2.5 9h5v6h-5zM8.5 9h5v6h-5zM8 5.5C5.5 5.5 4.5 3 6 2.2 7.4 1.5 8 3.5 8 5.5zM8 5.5C8 3.5 8.6 1.5 10 2.2c1.5.8.5 3.3-2 3.3z"/></svg>'
+  'Free Giveaway':'<svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M1.5 5.5h13v3h-13zM2.5 9h5v6h-5zM8.5 9h5v6h-5zM8 5.5C5.5 5.5 4.5 3 6 2.2 7.4 1.5 8 3.5 8 5.5zM8 5.5C8 3.5 8.6 1.5 10 2.2c1.5.8.5 3.3-2 3.3z"/></svg>'
 };
-const DRAWS=['Regular draw','Auto draw'];
-const normDraw = d => d==='Auto draw' ? 'Auto draw' : 'Regular draw';
+const CATS = ['Monday Scratch','Wednesday Coin Drop','Friday Spin','Penny Sweet','Prize Every Time','Auto Draw','Hero Campaign','Others','Free Giveaway','Regular'];
+const pickCI = (v,list) => { const s=String(v==null?'':v).trim().toLowerCase(); return list.find(x=>x.toLowerCase()===s)||null; };
+const isAuto = c => c.category==='Auto Draw';
+const isPenny = c => c.category==='Penny Sweet';
+const iconOf = c => isPenny(c) ? ICON['Penny Sweet'] : (ICON[c.format]||ICON['Final Draw']);
+const catCls = c => (isAuto(c)?'auto ':'')+(isPenny(c)?'cat-penny':'');
+function migrate(c){
+  const o=Object.assign({},c);
+  const oldFmt=String(o.format||'').trim().toLowerCase();
+  let fmt=pickCI(o.format,FORMATS);
+  let cat=pickCI(o.category,CATS);
+  if(!cat){
+    const d=String(o.draw||'').toLowerCase(), th=o.theme;
+    if(oldFmt==='penny sweet'||th==='tt') cat='Penny Sweet';
+    else if(d==='auto draw'||th==='ot') cat='Auto Draw';
+    else if(th==='ww') cat='Wednesday Coin Drop';
+    else if(th==='cf') cat='Friday Spin';
+    else if(th==='wk') cat='Prize Every Time';
+    else if(th==='th') cat='Hero Campaign';
+    else if(th==='so'||fmt==='Free Giveaway') cat='Free Giveaway';
+    else if(th==='mm'&&fmt==='Instant Win') cat='Monday Scratch';
+    else cat='Regular';
+  }
+  if(!fmt) fmt = oldFmt==='penny sweet' ? 'Final Draw' : (cat==='Free Giveaway'?'Free Giveaway':'Final Draw');
+  let th=THEMES.some(t=>t.id===o.theme)?o.theme:null;
+  if(!th){ const ld=o.launch; th = /^\d{4}-\d\d-\d\d$/.test(ld||'') ? THEME_BY_DAY[n2d(d2n(ld)).getUTCDay()] : 'mon'; }
+  o.format=fmt; o.category=cat; o.theme=th; delete o.draw;
+  return o;
+}
 const AUTO_ICON='<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.6-3.7"/><path d="M13 2.5v2.8h-2.8"/></svg>';
 const colorOf = c => groupBy==='theme' ? 'var(--t-'+c.theme+')' : 'var(--d'+n2d(d2n(groupBy==='end'?c.end:c.launch)).getUTCDay()+')';
-const normFormat = f => FORMATS.includes(f) ? f : 'Final draw';
+const normFormat = f => pickCI(f,FORMATS)||'Final Draw';
 const fmtOn = new Set();
+const catOn = new Set();
+let weekOn = null;
 const dayOn = new Set();
-const laneOf = c => c.draw==='Auto draw' ? 'Auto draw' : c.format;
+const laneOf = c => c.category;
 const dowKey = c => n2d(d2n(groupBy==='end'?c.end:c.launch)).getUTCDay();
-const passes = c => (!fmtOn.size || fmtOn.has(c.format)) && (!dayOn.size || dayOn.has(dowKey(c)));
-const filtOn = () => fmtOn.size>0 || dayOn.size>0;
-const filtNames = () => [...fmtOn].concat([...dayOn].map(k=>DAYN[k]));
+const passes = c => (!fmtOn.size || fmtOn.has(c.format)) && (!catOn.size || catOn.has(c.category)) && (!dayOn.size || dayOn.has(dowKey(c))) && (weekOn===null || (d2n(c.launch)<=weekOn+6 && d2n(c.end)>=weekOn));
+const filtOn = () => fmtOn.size>0 || catOn.size>0 || dayOn.size>0 || weekOn!==null;
+const filtNames = () => [...fmtOn].concat([...catOn]).concat([...dayOn].map(k=>DAYN[k])).concat(weekOn===null?[]:['Week '+weekNo(weekOn)]);
 const DAY = 864e5;
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -393,9 +424,9 @@ const nowLocal = new Date();
 const TODAY = Date.UTC(nowLocal.getFullYear(),nowLocal.getMonth(),nowLocal.getDate())/DAY;
 const WK0 = Date.UTC(2025,11,29)/DAY;
 const weekNo = n => ((((Math.floor((mondayOf(n)-WK0)/7))%52)+52)%52)+1;
-const themeName = id => (THEMES.find(t=>t.id===id)||THEMES[7]).name;
+const themeName = id => (THEMES.find(t=>t.id===id)||THEMES[0]).name;
 
-let S = { comps: SEED.map(c=>({...c,format:normFormat(c.format),draw:normDraw(c.draw)})), cap: 16, tent: true, showDrop: false };
+let S = { comps: SEED.map(c=>migrate(c)), cap: 16, tent: true, showDrop: false };
 let focusId = null, toastT = null, gridBy = 'both';
 function toast(m){ const e=$('toast'); e.textContent=m; e.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>e.classList.remove('on'),4500); }
 let view = 'timeline', span = 8, startWk = mondayOf(TODAY), editing = null, touched = false, usingSeed = true;
@@ -410,12 +441,13 @@ function counts() {
   }
   return m;
 }
-const pennyOnly = () => fmtOn.size===1 && fmtOn.has('Penny Sweet');
+const pennyOnly = () => catOn.size===1 && catOn.has('Penny Sweet') && !fmtOn.size;
 let groupBy = 'launch';
+const dayLabel = k => groupBy==='launch' ? themeName(THEME_BY_DAY[k]) : DAYN[k];
 const DAYN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 function groupsList(){
-  if (groupBy==='theme') return THEMES.map(t=>({id:t.id,name:t.name,dot:'var(--t-'+t.id+')',test:c=>c.theme===t.id,add:'data-add="'+t.id+'"',always:['mm','tt','ww','th','cf','wk'].includes(t.id)}));
-  return [1,2,3,4,5,6,0].map(k=>({id:'d'+k,name:DAYN[k],dot:'var(--ink)',test:c=>n2d(d2n(groupBy==='end'?c.end:c.launch)).getUTCDay()===k,add:'data-addday="'+k+'"',always:true}));
+  if (groupBy==='theme') return THEMES.map(t=>({id:t.id,name:t.name,dot:'var(--t-'+t.id+')',test:c=>c.theme===t.id,add:'data-add="'+t.id+'"',always:true}));
+  return [1,2,3,4,5,6,0].map(k=>({id:'d'+k,name:dayLabel(k),dot:'var(--ink)',test:c=>n2d(d2n(groupBy==='end'?c.end:c.launch)).getUTCDay()===k,add:'data-addday="'+k+'"',always:true}));
 }
 function level(v){ if (pennyOnly()) return v>16?'over':(v<12?'warn':''); if (filtOn()) return ''; return v > S.cap ? 'over' : (v >= S.cap*0.85 ? 'warn' : ''); }
 
@@ -425,20 +457,20 @@ function render() {
   const s0 = startWk, nDays = span*7, s1 = s0 + nDays - 1;
   $('range').textContent = fmtShort(s0) + ' to ' + fmtShort(s1);
   renderTiles(cm, s0, s1);
-  $('legend').innerHTML = (groupBy==='theme' ? THEMES.map(t=>`<span><i class="dot" style="background:var(--t-${t.id})"></i>${esc(t.name)}</span>`) : [1,2,3,4,5,6,0].map(k=>`<span><i class="dot" style="background:var(--d${k})"></i>${DAYN[k]}</span>`)).join('')
+  $('legend').innerHTML = (groupBy==='theme' ? THEMES.map(t=>`<span><i class="dot" style="background:var(--t-${t.id})"></i>${esc(t.name)}</span>`) : [1,2,3,4,5,6,0].map(k=>`<span><i class="dot" style="background:var(--d${k})"></i>${dayLabel(k)}</span>`)).join('')
     + '<span><i class="dot" style="background:var(--t-ot);opacity:.6;outline:1.5px dashed #0006;outline-offset:-1.5px"></i>Tentative</span>'
     + '<span style="margin-left:10px;color:var(--ink);font-weight:600">Format:</span>'
     + (view!=='timeline' ? '<span style="margin-left:10px"><b style="background:#0a6b36;color:#fff;border-radius:3px;padding:0 6px;font-size:11px">&#9654; LAUNCH</b> hollow white card with a coloured outline, listed below the ends</span><span><b style="background:var(--ink);color:var(--surface);border-radius:3px;padding:0 6px;font-size:11px">&#9632; ENDS</b> solid coloured card, listed first</span>' : '')
-    + '<span><i class="swatch auto" style="background:var(--t-ot);color:#fff">'+AUTO_ICON+'</i>Auto draw (dotted inner line + loop icon)</span>'
-    + FORMATS.map(f=>`<span><i class="swatch f-${FID[f]}">${ICON[f]}</i>${f}${f==='Final draw'?' (white end cap = draw day)':f==='Free giveaway'?' (lighter solid)':f==='Penny Sweet'?' (solid blue, always)':' (solid)'}</span>`).join('');
+    + '<span><i class="swatch auto" style="background:var(--t-ot);color:#fff">'+AUTO_ICON+'</i>Category Auto Draw (dotted inner line + loop icon)</span><span><i class="swatch cat-penny">'+ICON['Penny Sweet']+'</i>Category Penny Sweet (solid blue, always)</span>'
+    + FORMATS.map(f=>`<span><i class="swatch f-${FID[f]}">${ICON[f]}</i>${f}${f==='Final Draw'?' (white end cap = draw day)':f==='Free Giveaway'?' (lighter solid)':f==='Fundraiser'?' (striped)':' (solid)'}</span>`).join('');
   renderFilter();
   if (view === 'timeline') renderTimeline(cm, s0, nDays); else renderWeeks(cm, s0, span);
   if (focusId) { const el=document.querySelector('[data-edit="'+focusId+'"].bar, [data-edit="'+focusId+'"].pill'); if(el){ el.classList.add('flash'); el.scrollIntoView({block:'center',inline:'center'}); } focusId=null; }
   const total = S.comps.length;
-  { const act=S.comps.filter(c=>c.status!=='Dropped'), n=f=>act.filter(c=>c.format===f).length, dr=S.comps.length-act.length;
-    $('ftot').innerHTML='<span class="lbl">Comps in plan</span><span class="tt all">Total <b>'+act.length+'</b></span>'+FORMATS.map(f=>'<span class="tt">'+ICON[f]+esc(f)+' <b>'+n(f)+'</b></span>').join('')+'<span class="tt">Auto draw <b>'+act.filter(c=>c.draw==='Auto draw').length+'</b></span>'+(dr?'<span class="fnote">'+dr+' dropped not counted</span>':''); }
+  { const all=S.comps.filter(c=>c.status!=='Dropped'), act=all.filter(passes), n=f=>act.filter(c=>c.format===f).length, dr=S.comps.length-all.length;
+    $('ftot').innerHTML='<span class="lbl">'+(filtOn()?'Comps matching the filter':'Comps in plan')+'</span><span class="tt all">Total <b>'+act.length+'</b>'+(filtOn()?' of '+all.length:'')+'</span>'+FORMATS.map(f=>'<span class="tt">'+ICON[f]+esc(f)+' <b>'+n(f)+'</b></span>').join('')+CATS.filter(k=>act.some(c=>c.category===k)).map(k=>'<span class="tt">'+esc(k)+' <b>'+act.filter(c=>c.category===k).length+'</b></span>').join('')+(filtOn()?'<span class="fnote">Filtered: '+esc(filtNames().join(' + '))+'</span>':'')+(dr?'<span class="fnote">'+dr+' dropped not counted</span>':''); }
   $('foot').textContent = usingSeed
-    ? 'Loaded from UK Calendar - Draft, week 45 onwards (launches 2 Nov 2026 to 26 Jan 2027). PS = Penny Sweet, AD = Auto Draw, FG = Free Giveaway. Calendar mid-campaign rows are not included. Read-only view, live from the Google Sheet. [Sheet read-only]'
+    ? 'Loaded from UK Calendar - Draft, week 45 onwards (launches 2 Nov 2026 to 26 Jan 2027). PS = Penny Sweet, AD = Auto Draw, FG = Free Giveaway. Calendar mid-campaign rows are not included. Read-only view, live from the Google Sheet. [Sheet read-only Z]'
     : total + ' comps in the plan.';
 }
 
@@ -449,7 +481,27 @@ function renderDayFilter(){
     `<button type="button" class="fchip" data-dow="${k}" aria-pressed="${dayOn.has(k)}">${DAYN[k]}<small>${cnt[k]||0} ${by}</small></button>`).join('')
     + (dayOn.size ? '<button type="button" class="btn sm" id="dclear">Show all days</button><span class="fnote">Showing comps '+by+' on the selected days. Counts and tiles follow the filter.</span>' : '<span class="fnote">Follows the "Group rows by" setting (launch day or end day).</span>');
 }
-function renderFilter(){ renderDayFilter();
+function renderCatFilter(){
+  const live={}; CATS.forEach(k=>live[k]=0);
+  for (const c of S.comps){ if(c.status==='Dropped'||(c.status==='Tentative'&&!S.tent)) continue; if(d2n(c.launch)<=TODAY && d2n(c.end)>=TODAY) live[c.category]++; }
+  $('cchips').innerHTML = '<span class="lbl">Filter by category</span>' + CATS.map(k=>
+    `<button type="button" class="fchip" data-cat="${esc(k)}" aria-pressed="${catOn.has(k)}">${esc(k)}<small>${live[k]} live today</small></button>`).join('')
+    + (catOn.size ? '<button type="button" class="btn sm" id="cclear">Show all</button><span class="fnote">Counts and tiles now cover only the selected categories.</span>' : '<span class="fnote">Showing all categories.</span>');
+}
+function renderWeekSel(){
+  const sel=$('weekSel'); if(!sel) return;
+  let lo=null, hi=null;
+  for (const c of S.comps){ if(c.status==='Dropped') continue; const a=mondayOf(d2n(c.launch)), b=mondayOf(d2n(c.end)); if(lo===null||a<lo) lo=a; if(hi===null||b>hi) hi=b; }
+  const list=[]; if(lo!==null) for(let m=lo;m<=hi;m+=7) list.push(m);
+  if(weekOn!==null && !list.includes(weekOn)) list.push(weekOn);
+  const key=JSON.stringify(list);
+  if(sel.dataset.key!==key){
+    sel.dataset.key=key;
+    sel.innerHTML='<option value="">All weeks</option>'+list.map(m=>`<option value="${m}">Week ${weekNo(m)} &middot; ${esc(fmtShort(m))}</option>`).join('');
+  }
+  sel.value = weekOn===null ? '' : String(weekOn);
+}
+function renderFilter(){ renderDayFilter(); renderCatFilter(); renderWeekSel();
   const live = {}; FORMATS.forEach(f=>live[f]=0);
   for (const c of S.comps){ if(c.status==='Dropped'||(c.status==='Tentative'&&!S.tent)) continue; if(d2n(c.launch)<=TODAY && d2n(c.end)>=TODAY) live[c.format]++; }
   $('fchips').innerHTML = '<span class="lbl">Filter by format</span>' + FORMATS.map(f=>
@@ -519,13 +571,7 @@ function renderTimeline(cm, s0, nDays) {
   </div>`;
   const vis = visibleComps(s0, s1);
   if (!vis.length) html += `<div class="empty">No comps in this window. Use + Add comp, or move the dates.</div>`;
-  const LANES = [
-    {id:'Penny Sweet',name:'Penny Sweet',icon:'Penny Sweet'},
-    {id:'Auto draw',name:'Auto draw',icon:'Final draw'},
-    {id:'Free giveaway',name:'Free giveaway',icon:'Free giveaway'},
-    {id:'Instant win',name:'Instant win',icon:'Instant win'},
-    {id:'Final draw',name:'Final draw',icon:'Final draw'}
-  ];
+  const LANES = CATS.map(k=>({id:k,name:k}));
   for (const t of groupsList()) {
     const items = vis.filter(t.test);
     if (!items.length && !t.always) continue;
@@ -537,13 +583,13 @@ function renderTimeline(cm, s0, nDays) {
       const tracks=[];
       const placed=li.map(c=>{ const a=d2n(c.launch), b=d2n(c.end); let ti=tracks.findIndex(e=>a>e); if(ti<0){ ti=tracks.length; tracks.push(b); } else tracks[ti]=b; return {c,a,b,ti}; });
       for (let ti=0; ti<tracks.length; ti++){
-        const lab = ti===0 ? `<div class="lab lane"><span class="chip">${ICON[L.icon]}${esc(L.name)}</span><span class="n">${li.length}</span></div>` : `<div class="lab lane"></div>`;
+        const lab = ti===0 ? `<div class="lab lane"><span class="chip">${iconOf(li[0])}${esc(L.name)}</span><span class="n">${li.length}</span></div>` : `<div class="lab lane"></div>`;
         const bars = placed.filter(p=>p.ti===ti).map(({c,a,b})=>{
           const x0=Math.max(a,s0), x1=Math.min(b,s1);
           const left=(x0-s0)*cw+1, width=(x1-x0+1)*cw-2;
-          const cls=['bar','f-'+FID[c.format], c.status==='Tentative'?'tent':'', c.status==='Dropped'?'drop':'', a<s0?'cl':'', b>s1?'cr':'', c.draw==='Auto draw'?'auto':''].join(' ');
-          const tip = `${c.name}\n${themeName(c.theme)} · ${c.format} · ${normDraw(c.draw)}${c.ticket?' · ticket '+c.ticket:''}${c.maxEntries!==''&&c.maxEntries!=null?' · max '+Number(c.maxEntries).toLocaleString('en-GB')+' entries':''} · ${c.status}\nLaunch ${DOW[n2d(a).getUTCDay()]} ${fmtShort(a)} · Ends ${DOW[n2d(b).getUTCDay()]} ${fmtShort(b)} (${b-a+1} days)${c.note?'\n'+c.note:''}`;
-          return `<button type="button" class="${cls}" data-edit="${esc(c.id)}" title="${esc(tip)}" style="left:${left}px;width:${width}px;--c:${colorOf(c)}">${ICON[c.format]}${c.draw==='Auto draw'?AUTO_ICON:''}<span class="bt">${a>=s0?'&#9654; ':''}${esc(c.name)}</span></button>`;
+          const cls=['bar','f-'+FID[c.format], c.status==='Tentative'?'tent':'', c.status==='Dropped'?'drop':'', a<s0?'cl':'', b>s1?'cr':'', catCls(c)].join(' ');
+          const tip = `${c.name}\n${themeName(c.theme)} · ${c.format} · ${c.category}${c.ticket?' · ticket '+c.ticket:''}${c.maxEntries!==''&&c.maxEntries!=null?' · max '+Number(c.maxEntries).toLocaleString('en-GB')+' entries':''} · ${c.status}\nLaunch ${DOW[n2d(a).getUTCDay()]} ${fmtShort(a)} · Ends ${DOW[n2d(b).getUTCDay()]} ${fmtShort(b)} (${b-a+1} days)${c.note?'\n'+c.note:''}`;
+          return `<button type="button" class="${cls}" data-edit="${esc(c.id)}" title="${esc(tip)}" style="left:${left}px;width:${width}px;--c:${colorOf(c)}">${iconOf(c)}${isAuto(c)?AUTO_ICON:''}<span class="bt">${a>=s0?'&#9654; ':''}${esc(c.name)}</span></button>`;
         }).join('');
         html += `<div class="row lanerow">${lab}<div class="track">${bars}</div></div>`;
       }
@@ -574,14 +620,9 @@ function renderWeeks(cm, s0, nw) {
     const rk=k=>k==='end'?0:1; return out.sort((x,y)=>rk(x.k)-rk(y.k)||x.d-y.d||x.c.name.localeCompare(y.c.name));
   };
   let body = '';
-  const pill = ({c,k}) => `<button type="button" class="pill k-${k} f-${FID[c.format]} ${c.draw==='Auto draw'?'auto':''} ${c.status==='Tentative'?'tent':''} ${c.status==='Dropped'?'drop':''}" data-edit="${esc(c.id)}" style="--c:${colorOf(c)}"><span class="pi">${ICON[c.format]}${c.draw==='Auto draw'?AUTO_ICON:''}</span><span><span class="tag">${k==='end'?'&#9632; ENDS':k==='launch'?'&#9654; LAUNCH':'&#9654; LAUNCH + &#9632; ENDS'}</span>${esc(c.name)}<small>${[c.ticket?esc(c.ticket):'', c.maxEntries!==''&&c.maxEntries!=null?'max '+Number(c.maxEntries).toLocaleString('en-GB'):''].filter(Boolean).join(' &middot; ')}${(c.ticket||(c.maxEntries!==''&&c.maxEntries!=null))?'<br>':''}${DOW[n2d(d2n(c.launch)).getUTCDay()]} ${fmtShort(d2n(c.launch))} &rarr; ${DOW[n2d(d2n(c.end)).getUTCDay()]} ${fmtShort(d2n(c.end))} &middot; ${d2n(c.end)-d2n(c.launch)+1}d</small></span></button>`;
-  const WLANES = [
-    {id:'Penny Sweet',name:'Penny Sweet',icon:'Penny Sweet'},
-    {id:'Auto draw',name:'Auto draw',icon:'Final draw'},
-    {id:'Free giveaway',name:'Free giveaway',icon:'Free giveaway'},
-    {id:'Instant win',name:'Instant win',icon:'Instant win'},
-    {id:'Final draw',name:'Final draw',icon:'Final draw'}
-  ];
+  const pill = ({c,k}) => `<button type="button" class="pill k-${k} f-${FID[c.format]} ${catCls(c)} ${c.status==='Tentative'?'tent':''} ${c.status==='Dropped'?'drop':''}" data-edit="${esc(c.id)}" style="--c:${colorOf(c)}"><span class="pi">${iconOf(c)}${isAuto(c)?AUTO_ICON:''}</span><span><span class="tag">${k==='end'?'&#9632; ENDS':k==='launch'?'&#9654; LAUNCH':'&#9654; LAUNCH + &#9632; ENDS'}</span>${esc(c.name)}<small>${[c.ticket?esc(c.ticket):'', c.maxEntries!==''&&c.maxEntries!=null?'max '+Number(c.maxEntries).toLocaleString('en-GB'):''].filter(Boolean).join(' &middot; ')}${(c.ticket||(c.maxEntries!==''&&c.maxEntries!=null))?'<br>':''}${DOW[n2d(d2n(c.launch)).getUTCDay()]} ${fmtShort(d2n(c.launch))} &rarr; ${DOW[n2d(d2n(c.end)).getUTCDay()]} ${fmtShort(d2n(c.end))} &middot; ${d2n(c.end)-d2n(c.launch)+1}d</small></span></button>`;
+  const WLANES = CATS.map(k=>({id:k,name:k}));
+  const laneIcon = k => iconOf(S.comps.find(c=>c.category===k)||{format:'Final Draw',category:k});
   for (const t of groupsList()){
     const cellItems = weeks.map(([a,b])=>entsFor(t,a,b));
     const lanes = WLANES.filter(L=>cellItems.some(arr=>arr.some(({c})=>laneOf(c)===L.id)));
@@ -594,7 +635,7 @@ function renderWeeks(cm, s0, nw) {
     lanes.forEach((L,i)=>{
       let row='';
       cellItems.forEach(arr=>{ row += `<td><div class="cell">${arr.filter(({c})=>laneOf(c)===L.id).map(pill).join('')}</div></td>`; });
-      body += `<tr class="${i===0?'dayrow':''}">${i===0?`<td class="sk" rowspan="${lanes.length}">${dayInfo}</td>`:''}<td class="lc"><span class="chip">${ICON[L.icon]}${esc(L.name)}</span></td>${row}</tr>`;
+      body += `<tr class="${i===0?'dayrow':''}">${i===0?`<td class="sk" rowspan="${lanes.length}">${dayInfo}</td>`:''}<td class="lc"><span class="chip">${laneIcon(L.id)}${esc(L.name)}</span></td>${row}</tr>`;
     });
   }
   let endRow='<td class="sk" colspan="2">Ending</td>', launchRow='<td class="sk" colspan="2">Launching</td>', peakRow='<td class="sk" colspan="2">Peak live at once</td>', avgRow='<td class="sk" colspan="2">Average live</td>';
@@ -609,7 +650,7 @@ function renderWeeks(cm, s0, nw) {
   let fmtRows='';
   for (const f of FORMATS){
     let r='<td class="sk" colspan="2"><span style="display:inline-flex;align-items:center;gap:5px">'+ICON[f]+esc(f)+'</span></td>';
-    const act=S.comps.filter(c=>c.format===f&&c.status!=='Dropped'&&(c.status!=='Tentative'||S.tent)).map(c=>({a:d2n(c.launch),b:d2n(c.end)}));
+    const act=S.comps.filter(c=>c.format===f&&passes(c)&&c.status!=='Dropped'&&(c.status!=='Tentative'||S.tent)).map(c=>({a:d2n(c.launch),b:d2n(c.end)}));
     for (const [a,b] of weeks){
       let pk=0, l=0, e=0;
       for(let n=a;n<=b;n++){ let v=0; for(const c of act) if(c.a<=n&&n<=c.b) v++; if(v>pk) pk=v; }
@@ -627,17 +668,17 @@ function openDlg(c, preset) {
   editing = c ? c.id : null;
   $('dlgTitle').textContent = c ? 'Edit comp' : 'Add comp';
   $('fTheme').innerHTML = THEMES.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
-  $('fFormat').innerHTML = FORMATS.map(f=>`<option>${esc(f)}</option>`).join(''); $('fDraw').innerHTML = DRAWS.map(f=>`<option>${esc(f)}</option>`).join('');
-  const base = c || Object.assign({name:'',theme:'mm',format:'Final draw',launch:n2iso(Math.max(TODAY,startWk)),end:n2iso(Math.max(TODAY,startWk)+6),status:'Confirmed',note:''}, preset||{});
-  $('fName').value=base.name; $('fTheme').value=base.theme; $('fFormat').value=base.format; $('fDraw').value=normDraw(base.draw); $('fTicket').value=base.ticket||''; $('fMax').value=base.maxEntries===undefined||base.maxEntries===null?'':base.maxEntries;
-  $('fLaunch').value=base.launch; $('fEnd').value=base.end; $('fStatus').value=base.status; $('fNote').value=base.note||'';
+  $('fFormat').innerHTML = FORMATS.map(f=>`<option>${esc(f)}</option>`).join(''); $('fCat').innerHTML = CATS.map(f=>`<option>${esc(f)}</option>`).join('');
+  const base = c || Object.assign({name:'',theme:'mon',format:'Final Draw',category:'Regular',launch:n2iso(Math.max(TODAY,startWk)),end:n2iso(Math.max(TODAY,startWk)+6),status:'Confirmed',note:''}, preset||{});
+  $('fName').value=base.name; $('fTheme').value=base.theme; $('fFormat').value=base.format; $('fCat').value=base.category||'Regular'; $('fTicket').value=base.ticket||''; $('fMax').value=base.maxEntries===undefined||base.maxEntries===null?'':base.maxEntries;
+  $('fLaunch').value=base.launch; $('fEnd').value=base.end; $('fStatus').value=base.status; if(!c&&!(preset&&preset.theme)&&base.launch) $('fTheme').value=THEME_BY_DAY[n2d(d2n(base.launch)).getUTCDay()]; $('fNote').value=base.note||'';
   $('err').textContent=''; $('delBtn').style.display = c ? '' : 'none'; $('dupBtn').style.display = c ? '' : 'none';
   $('delBtn').textContent='Delete'; $('delBtn').dataset.sure='';
   $('scrim').classList.add('on'); updateImpact(); $('fName').focus();
 }
 function closeDlg(){ $('scrim').classList.remove('on'); editing=null; }
 function readForm(){
-  return { name:$('fName').value.trim(), theme:$('fTheme').value, format:$('fFormat').value, draw:$('fDraw').value, ticket:$('fTicket').value.trim().slice(0,20), maxEntries:($('fMax').value===''?'':Math.max(0,Math.round(Number($('fMax').value)||0))), launch:$('fLaunch').value,
+  return { name:$('fName').value.trim(), theme:$('fTheme').value, format:$('fFormat').value, category:$('fCat').value, ticket:$('fTicket').value.trim().slice(0,20), maxEntries:($('fMax').value===''?'':Math.max(0,Math.round(Number($('fMax').value)||0))), launch:$('fLaunch').value,
            end:$('fEnd').value, status:$('fStatus').value, note:$('fNote').value.trim() };
 }
 function updateImpact(){
@@ -679,7 +720,7 @@ async function persist(){ return;
 }
 function applyLoaded(p){
   if(!p||!Array.isArray(p.comps)) return false;
-  S.comps=p.comps.map(c=>({...c,format:normFormat(c.format),draw:normDraw(c.draw)})); if(typeof p.cap==='number') S.cap=p.cap; if(typeof p.tent==='boolean') S.tent=p.tent; if(typeof p.showDrop==='boolean') S.showDrop=p.showDrop;
+  S.comps=p.comps.map(c=>migrate(c)); if(typeof p.cap==='number') S.cap=p.cap; if(typeof p.tent==='boolean') S.tent=p.tent; if(typeof p.showDrop==='boolean') S.showDrop=p.showDrop;
   usingSeed=false; $('cap').value=S.cap; $('tent').checked=S.tent; $('drop').checked=S.showDrop; return true;
 }
 window.__step='loading-saved-data';
@@ -743,7 +784,7 @@ async function spost(data){
   const r = await fetch(sync.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({key:sync.key,baseRev:sync.rev,data})});
   return r.json();
 }
-function cleanComps(list){ return list.map(c=>({...c,format:normFormat(c.format),draw:normDraw(c.draw)})); }
+function cleanComps(list){ return list.map(c=>migrate(c)); }
 function applyServer(d){
   S.comps=cleanComps(d.comps); if(typeof d.cap==='number') S.cap=d.cap; if(typeof d.tent==='boolean') S.tent=d.tent;
   usingSeed=false; $('cap').value=S.cap; $('tent').checked=S.tent;
@@ -832,7 +873,7 @@ function parseBackup(txt){
   const o=JSON.parse(txt), list=Array.isArray(o)?o:o.comps;
   if(!Array.isArray(list)) throw new Error('no comps found');
   const re=/^\d{4}-\d\d-\d\d$/;
-  const comps=list.map(c=>({id:String(c.id||uid()),name:String(c.name||'').slice(0,120),theme:THEMES.some(t=>t.id===c.theme)?c.theme:'ot',format:normFormat(c.format),draw:normDraw(c.draw),ticket:String(c.ticket||'').slice(0,20),maxEntries:(c.maxEntries===''||c.maxEntries==null||isNaN(Number(c.maxEntries)))?'':Math.max(0,Math.round(Number(c.maxEntries))),
+  const comps=list.map(migrate).map(c=>({id:String(c.id||uid()),name:String(c.name||'').slice(0,120),theme:c.theme,format:c.format,category:c.category,ticket:String(c.ticket||'').slice(0,20),maxEntries:(c.maxEntries===''||c.maxEntries==null||isNaN(Number(c.maxEntries)))?'':Math.max(0,Math.round(Number(c.maxEntries))),
     launch:re.test(c.launch)?c.launch:'',end:re.test(c.end)?c.end:'',status:['Confirmed','Tentative','Dropped'].includes(c.status)?c.status:'Confirmed',note:String(c.note||'').slice(0,300)}))
     .filter(c=>c.name&&c.launch&&c.end&&c.end>=c.launch);
   return {comps,cap:o.cap,tent:o.tent,skipped:list.length-comps.length};
@@ -867,13 +908,15 @@ window.__step='wiring-buttons';
 /* ---------- events ---------- */
 document.addEventListener('click', e=>{
   if(e.target.closest('[data-edit]')) return;
-  const ad=null; if(ad){ const th=ad.dataset.add; const off={mm:0,tt:0,ww:2,th:0,cf:4,wk:0,so:0,ot:1}[th]||0;
+  const ad=null; if(ad){ const th=ad.dataset.add; const off={mon:0,tue:1,wed:2,thu:3,fri:4,sat:5,sun:6}[th]||0;
     const l=mondayOf(startWk)+off;
-    openDlg(null,{theme:th,launch:n2iso(l),end:n2iso(l+(th==='ot'?0:6))}); return; }
+    openDlg(null,{theme:th,category:'Regular',launch:n2iso(l),end:n2iso(l+6)}); return; }
   const ad2=null; if(ad2){ const k=Number(ad2.dataset.addday); const l=mondayOf(startWk)+((k+6)%7);
-    openDlg(null,{theme:'ot',launch:n2iso(l),end:n2iso(l+6)}); return; }
+    openDlg(null,{theme:THEME_BY_DAY[k],category:'Regular',launch:n2iso(l),end:n2iso(l+6)}); return; }
   const db=e.target.closest('[data-dow]'); if(db){ const k=Number(db.dataset.dow); if(dayOn.has(k)) dayOn.delete(k); else dayOn.add(k); render(); return; }
   if(e.target.id==='dclear'){ dayOn.clear(); render(); return; }
+  const cb=e.target.closest('[data-cat]'); if(cb){ const f=cb.dataset.cat; if(catOn.has(f)) catOn.delete(f); else catOn.add(f); render(); return; }
+  if(e.target.id==='cclear'){ catOn.clear(); render(); return; }
   const fb=e.target.closest('[data-fmt]'); if(fb){ const f=fb.dataset.fmt; if(fmtOn.has(f)) fmtOn.delete(f); else fmtOn.add(f); render(); return; }
   if(e.target.id==='fclear'){ fmtOn.clear(); render(); return; }
   const vb=e.target.closest('[data-view]'); if(vb){ view=vb.dataset.view; document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b===vb))); render(); return; }
@@ -884,7 +927,7 @@ $('cancelBtn').onclick=closeDlg;
 $('scrim').addEventListener('mousedown',e=>{ if(e.target===$('scrim')) closeDlg(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('scrim').classList.contains('on')) closeDlg(); if($('scrim2').classList.contains('on')) $('scrim2').classList.remove('on'); } });
 ['fLaunch','fEnd','fStatus','fTheme'].forEach(id=>$(id).addEventListener('input',updateImpact));
-$('fLaunch').addEventListener('change',()=>{ if($('fLaunch').value && (!$('fEnd').value || $('fEnd').value<$('fLaunch').value)) $('fEnd').value=$('fLaunch').value; updateImpact(); });
+$('fLaunch').addEventListener('change',()=>{ if(editing===null && $('fLaunch').value) $('fTheme').value=THEME_BY_DAY[n2d(d2n($('fLaunch').value)).getUTCDay()]; if($('fLaunch').value && (!$('fEnd').value || $('fEnd').value<$('fLaunch').value)) $('fEnd').value=$('fLaunch').value; updateImpact(); });
 $('form').addEventListener('submit',e=>{
   e.preventDefault();
   const f=readForm();
@@ -916,14 +959,15 @@ $('next').onclick=()=>{ startWk+=7; render(); };
 $('todayBtn').onclick=()=>{ startWk=mondayOf(TODAY); render(); };
 $('groupBy').onchange=e=>{ groupBy=e.target.value; render(); };
 $('gridBy').onchange=e=>{ gridBy=e.target.value; render(); };
+$('weekSel').onchange=e=>{ weekOn = e.target.value==='' ? null : Number(e.target.value); if(weekOn!==null) startWk=weekOn; render(); };
 $('span').onchange=e=>{ span=Number(e.target.value); render(); };
 $('cap').onchange=e=>{ const v=Math.max(1,Math.min(999,Math.round(Number(e.target.value))||20)); e.target.value=v; S.cap=v; changed(); };
 $('tent').onchange=e=>{ S.tent=e.target.checked; changed(); };
 $('drop').onchange=e=>{ S.showDrop=e.target.checked; changed(); };
 $('copyCsv').onclick=async()=>{
   const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
-  const rows=[['Name','Theme','Format','Draw type','Ticket price','Max entries','Launch','End','Days','Status','Notes']].concat(
-    S.comps.slice().sort((a,b)=>a.launch.localeCompare(b.launch)).map(c=>[c.name,themeName(c.theme),c.format,normDraw(c.draw),c.ticket||'',c.maxEntries==null?'':c.maxEntries,c.launch,c.end,d2n(c.end)-d2n(c.launch)+1,c.status,c.note]));
+  const rows=[['Name','Theme','Format','Category','Ticket price','Max entries','Launch','End','Days','Status','Notes']].concat(
+    S.comps.slice().sort((a,b)=>a.launch.localeCompare(b.launch)).map(c=>[c.name,themeName(c.theme),c.format,c.category,c.ticket||'',c.maxEntries==null?'':c.maxEntries,c.launch,c.end,d2n(c.end)-d2n(c.launch)+1,c.status,c.note]));
   const csv=rows.map(r=>r.map(q).join(',')).join('\n');
   try{ await navigator.clipboard.writeText(csv); $('copyCsv').textContent='Copied'; }
   catch(e){ $('copyCsv').textContent='Copy blocked'; }
