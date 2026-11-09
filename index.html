@@ -360,8 +360,8 @@ const THEMES = [
   {id:'thu',name:'Tech Thursdays'},{id:'fri',name:'99c Car Friday'},{id:'sat',name:'Saturday'},{id:'sun',name:'Sunday'}
 ];
 const THEME_BY_DAY = {1:'mon',2:'tue',3:'wed',4:'thu',5:'fri',6:'sat',0:'sun'};
-const FORMATS = ['Free Giveaway','Instant Win','Final Draw','Fundraiser'];
-const FID = {'Instant Win':'iw','Final Draw':'draw','Free Giveaway':'free','Fundraiser':'fund'};
+const FORMATS = ['Instant Win','Final Draw','Fundraiser'];
+const FID = {'Instant Win':'iw','Final Draw':'draw','Fundraiser':'fund'};
 const ICON = {
   'Instant Win':'<svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M9.5 0.5 3 9h4l-1 6.5L13 7H9z"/></svg>',
   'Final Draw':'<svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M4 1h8v4.2A4 4 0 0 1 8.9 9v2H11v2.5H5V11h2.1V9A4 4 0 0 1 4 5.2zM2 2.5h1.5v2.2A1.8 1.8 0 0 1 2 3zm12 0h-1.5v2.2A1.8 1.8 0 0 0 14 3z"/></svg>',
@@ -373,8 +373,9 @@ const CATS = ['Monday Scratch','Wednesday Coin Drop','Friday Spin','Penny Sweet'
 const pickCI = (v,list) => { const s=String(v==null?'':v).trim().toLowerCase(); return list.find(x=>x.toLowerCase()===s)||null; };
 const isAuto = c => c.category==='Auto Draw';
 const isPenny = c => c.category==='Penny Sweet';
-const iconOf = c => isPenny(c) ? ICON['Penny Sweet'] : (ICON[c.format]||ICON['Final Draw']);
-const catCls = c => (isAuto(c)?'auto ':'')+(isPenny(c)?'cat-penny':'');
+const isFree = c => c.category==='Free Giveaway';
+const iconOf = c => isPenny(c) ? ICON['Penny Sweet'] : (isFree(c) ? ICON['Free Giveaway'] : (ICON[c.format]||ICON['Final Draw']));
+const catCls = c => (isAuto(c)?'auto ':'')+(isPenny(c)?'cat-penny':'')+(isFree(c)?'f-free':'');
 function migrate(c){
   const o=Object.assign({},c);
   const oldFmt=String(o.format||'').trim().toLowerCase();
@@ -388,11 +389,11 @@ function migrate(c){
     else if(th==='cf') cat='Friday Spin';
     else if(th==='wk') cat='Prize Every Time';
     else if(th==='th') cat='Hero Campaign';
-    else if(th==='so'||fmt==='Free Giveaway') cat='Free Giveaway';
+    else if(th==='so'||oldFmt==='free giveaway') cat='Free Giveaway';
     else if(th==='mm'&&fmt==='Instant Win') cat='Monday Scratch';
     else cat='Regular';
   }
-  if(!fmt) fmt = oldFmt==='penny sweet' ? 'Final Draw' : (cat==='Free Giveaway'?'Free Giveaway':'Final Draw');
+  if(!fmt) fmt='Final Draw';
   let th=THEMES.some(t=>t.id===o.theme)?o.theme:null;
   if(!th){ const ld=o.launch; th = /^\d{4}-\d\d-\d\d$/.test(ld||'') ? THEME_BY_DAY[n2d(d2n(ld)).getUTCDay()] : 'mon'; }
   o.format=fmt; o.category=cat; o.theme=th; delete o.draw;
@@ -461,8 +462,8 @@ function render() {
     + '<span><i class="dot" style="background:var(--t-ot);opacity:.6;outline:1.5px dashed #0006;outline-offset:-1.5px"></i>Tentative</span>'
     + '<span style="margin-left:10px;color:var(--ink);font-weight:600">Format:</span>'
     + (view!=='timeline' ? '<span style="margin-left:10px"><b style="background:#0a6b36;color:#fff;border-radius:3px;padding:0 6px;font-size:11px">&#9654; LAUNCH</b> hollow white card with a coloured outline, listed below the ends</span><span><b style="background:var(--ink);color:var(--surface);border-radius:3px;padding:0 6px;font-size:11px">&#9632; ENDS</b> solid coloured card, listed first</span>' : '')
-    + '<span><i class="swatch auto" style="background:var(--t-ot);color:#fff">'+AUTO_ICON+'</i>Category Auto Draw (dotted inner line + loop icon)</span><span><i class="swatch cat-penny">'+ICON['Penny Sweet']+'</i>Category Penny Sweet (solid blue, always)</span>'
-    + FORMATS.map(f=>`<span><i class="swatch f-${FID[f]}">${ICON[f]}</i>${f}${f==='Final Draw'?' (white end cap = draw day)':f==='Free Giveaway'?' (lighter solid)':f==='Fundraiser'?' (striped)':' (solid)'}</span>`).join('');
+    + '<span><i class="swatch auto" style="background:var(--t-ot);color:#fff">'+AUTO_ICON+'</i>Category Auto Draw (dotted inner line + loop icon)</span><span><i class="swatch cat-penny">'+ICON['Penny Sweet']+'</i>Category Penny Sweet (solid blue, always)</span><span><i class="swatch f-free">'+ICON['Free Giveaway']+'</i>Category Free Giveaway (lighter solid)</span>'
+    + FORMATS.map(f=>`<span><i class="swatch f-${FID[f]}">${ICON[f]}</i>${f}${f==='Final Draw'?' (white end cap = draw day)':f==='Fundraiser'?' (striped)':' (solid)'}</span>`).join('');
   renderFilter();
   if (view === 'timeline') renderTimeline(cm, s0, nDays); else renderWeeks(cm, s0, span);
   if (focusId) { const el=document.querySelector('[data-edit="'+focusId+'"].bar, [data-edit="'+focusId+'"].pill'); if(el){ el.classList.add('flash'); el.scrollIntoView({block:'center',inline:'center'}); } focusId=null; }
