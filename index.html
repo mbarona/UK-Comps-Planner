@@ -199,6 +199,10 @@ label.btn{display:inline-block}
 .stat{font-size:13px;font-weight:600}
 .bar.f-fund,.pill.f-fund,.swatch.f-fund{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.22) 0 6px,transparent 6px 12px)}
 .bar.cat-penny{background:#2a6fc4;color:#fff;box-shadow:none}.pill.cat-penny{background:#2a6fc4;color:#fff;box-shadow:none}.swatch.cat-penny{background:#2a6fc4;color:#fff}
+.weeks div small{display:block;font-weight:500;color:var(--ink);margin-top:2px}.weeks div small b{font-weight:700}
+.days.cnt div{padding-top:4px;font-size:11px;font-weight:700;border-bottom:0}.days.cnt.l div{color:#0a6b36}.days.cnt.e div{color:var(--ink)}
+.row.sumhead,.row.sumrow{position:relative;z-index:1;background:var(--surface)}.row.sumhead{min-height:30px;background:var(--bg);border-top:2px solid var(--ink)}.row.sumhead .lab{background:var(--bg)}.row.sumhead .lab strong{font-family:var(--font-display);font-size:14px}
+.row.sumrow{min-height:30px}.row.sumrow .lab{font-size:12px;font-weight:600}.row.sumrow .weeks.sumw div{padding:6px 8px;font-size:13px;color:var(--ink);font-weight:500;white-space:normal}.row.sumrow .weeks.sumw div b{font-weight:700}.row.sumrow .weeks.sumw div b.over{color:var(--over)}.row.sumrow .weeks.sumw small{display:block;color:var(--muted);font-weight:500;font-size:11px}
 #addBtn,#shareBtn,[data-add],[data-addday]{display:none!important}.bar,.pill{cursor:default}</style>
 </head>
 <body>
@@ -554,8 +558,23 @@ function renderTimeline(cm, s0, nDays) {
   let peak = 0; for (let n=s0;n<=s1;n++) peak = Math.max(peak, cm.get(n)||0);
   const scale = Math.max(pennyOnly() ? 18 : (filtOn() ? 0 : S.cap*1.2), peak*1.1, 5);
   const bandH = 100;
-  let weeks='', days='', bars='';
-  for (let w=0; w<span; w++){ const wn=s0+w*7; weeks += `<div>Week ${weekNo(wn)} &middot; ${fmtShort(wn)}</div>`; }
+  const lc={}, ec={};
+  for (const c of S.comps){
+    if (c.status==='Dropped' || (c.status==='Tentative' && !S.tent) || !passes(c)) continue;
+    const a=d2n(c.launch), b=d2n(c.end);
+    if (a>=s0 && a<=s1) lc[a]=(lc[a]||0)+1;
+    if (b>=s0 && b<=s1) ec[b]=(ec[b]||0)+1;
+  }
+  let weeks='', days='', bars='', lrow='', erow='';
+  for (let w=0; w<span; w++){
+    const wn=s0+w*7; let wl=0, we=0; for(let k=wn;k<wn+7;k++){ wl+=lc[k]||0; we+=ec[k]||0; }
+    weeks += `<div>Week ${weekNo(wn)} &middot; ${fmtShort(wn)}<small><b>${wl}</b> launching &middot; <b>${we}</b> ending</small></div>`;
+  }
+  for (let n=s0;n<=s1;n++){
+    const dw=n2d(n).getUTCDay(), cl=(dw===0||dw===6)?'we':'';
+    lrow += `<div class="${cl}" title="${fmtShort(n)}: ${lc[n]||0} launching">${lc[n]?'+'+lc[n]:''}</div>`;
+    erow += `<div class="${cl}" title="${fmtShort(n)}: ${ec[n]||0} ending">${ec[n]?'&minus;'+ec[n]:''}</div>`;
+  }
   for (let n=s0;n<=s1;n++){
     const d=n2d(n), dow=d.getUTCDay(), v=cm.get(n)||0, lv=level(v);
     days += `<div class="${(dow===0||dow===6)?'we':''} ${n===TODAY?'today':''}">${DOW[dow]}<b>${d.getUTCDate()}</b></div>`;
@@ -563,8 +582,10 @@ function renderTimeline(cm, s0, nDays) {
     bars += `<div title="${fmtShort(n)}: ${v} live"><span class="${lv==='over'?'over-n':''}">${v||''}</span><i class="${lv}" style="height:${h}px"></i></div>`;
   }
   let html = `<div class="stick">
-    <div class="row hdr" style="min-height:44px"><div class="lab">Week starting</div><div class="track" style="background:none">${'<div class="weeks">'+weeks+'</div>'}</div></div>
+    <div class="row hdr" style="min-height:52px"><div class="lab">Week starting</div><div class="track" style="background:none">${'<div class="weeks">'+weeks+'</div>'}</div></div>
     <div class="row hdr" style="min-height:40px"><div class="lab">Day</div><div class="track" style="background:none"><div class="days">${days}</div></div></div>
+    <div class="row hdr" style="min-height:24px"><div class="lab">Launching</div><div class="track" style="background:none"><div class="days cnt l">${lrow}</div></div></div>
+    <div class="row hdr" style="min-height:24px"><div class="lab">Ending</div><div class="track" style="background:none"><div class="days cnt e">${erow}</div></div></div>
     <div class="row band"><div class="lab"><strong>Live at once</strong><small>${filtOn()?'Counting only: '+esc(filtNames().join(', '))+'.':'Comps running each day.<br>Red above '+S.cap+'.'}${pennyOnly()?'<br>Target 12 to 16: amber below, red above.':''}</small></div>
       <div class="track" style="min-height:128px"><div class="bars">${bars}</div>
         <div class="capline" style="display:${filtOn()?'none':'block'};bottom:${Math.round(S.cap/scale*bandH)+21}px"><em>limit ${S.cap}</em></div>
@@ -594,6 +615,29 @@ function renderTimeline(cm, s0, nDays) {
         }).join('');
         html += `<div class="row lanerow">${lab}<div class="track">${bars}</div></div>`;
       }
+    }
+  }
+  {
+    const sumRow=(label,cells,first)=>`<div class="row sumrow ${first?'first':''}"><div class="lab">${label}</div><div class="track" style="background:none"><div class="weeks sumw">${cells.map(x=>'<div>'+x+'</div>').join('')}</div></div></div>`;
+    const L=[],E=[],P=[],A=[];
+    for (let w=0; w<span; w++){
+      const wn=s0+w*7; let l=0,e=0,pk=0,tot=0;
+      for(let k=wn;k<wn+7;k++){ l+=lc[k]||0; e+=ec[k]||0; const v=cm.get(k)||0; tot+=v; if(v>pk) pk=v; }
+      L.push('<b>'+l+'</b>'); E.push('<b>'+e+'</b>');
+      const over=!filtOn()&&pk>S.cap; P.push('<b class="'+(over?'over':'')+'">'+pk+'</b>'+(over?' (over)':'')); A.push('<b>'+(tot/7).toFixed(1)+'</b>');
+    }
+    html += `<div class="row sumhead"><div class="lab"><strong>Weekly summary</strong></div><div class="track" style="background:none"></div></div>`;
+    html += sumRow('Launching',L,true)+sumRow('Ending',E)+sumRow('Peak live at once',P)+sumRow('Average live',A);
+    for (const f of FORMATS){
+      const act=S.comps.filter(c=>c.format===f&&passes(c)&&c.status!=='Dropped'&&(c.status!=='Tentative'||S.tent)).map(c=>({a:d2n(c.launch),b:d2n(c.end)}));
+      const cells=[];
+      for (let w=0; w<span; w++){
+        const wn=s0+w*7; let pk=0,l=0,e=0;
+        for(let k=wn;k<wn+7;k++){ let v=0; for(const c of act) if(c.a<=k&&k<=c.b) v++; if(v>pk) pk=v; }
+        for(const c of act){ if(c.a>=wn&&c.a<wn+7) l++; if(c.b>=wn&&c.b<wn+7) e++; }
+        cells.push('<b>'+pk+'</b> live<small>+'+l+' launching &middot; '+e+' ending</small>');
+      }
+      html += sumRow('<span class="chip">'+ICON[f]+esc(f)+'</span>',cells);
     }
   }
   html += `<div class="today-line" style="left:calc(${lw}px + ${(TODAY-s0)*cw + cw/2 - 1}px);display:${(TODAY>=s0&&TODAY<=s1)?'block':'none'}"></div>`;
