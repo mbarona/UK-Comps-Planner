@@ -718,10 +718,25 @@ function loadSyncCfg(){
 function saveSyncCfg(url,key){ sync.url=url; sync.key=key; try{ if(url) localStorage.setItem('comp-planner-oosch-sync',JSON.stringify({url,key})); else localStorage.removeItem('comp-planner-oosch-sync'); }catch(e){} }
 const IN_GAS = typeof google !== 'undefined' && !!(google.script && google.script.run);
 function gas(fn, arg){ return new Promise((res,rej)=>{ const r=google.script.run.withSuccessHandler(res).withFailureHandler(e=>rej(new Error((e&&e.message)||String(e)))); arg===undefined ? r[fn]() : r[fn](arg); }); }
+function jsonpGet(){
+  return new Promise((res,rej)=>{
+    const cb='__cp'+Date.now()+Math.floor(Math.random()*1000), s=document.createElement('script');
+    const done=()=>{ clearTimeout(t); try{ delete window[cb]; }catch(e){ window[cb]=undefined; } s.remove(); };
+    const t=setTimeout(()=>{ done(); rej(new Error('no reply from the script address')); },15000);
+    window[cb]=d=>{ done(); res(d); };
+    s.onerror=()=>{ done(); rej(new Error('the script address was blocked or is not public')); };
+    s.src=sync.url+(sync.url.includes('?')?'&':'?')+'key='+encodeURIComponent(sync.key)+'&callback='+cb;
+    document.head.appendChild(s);
+  });
+}
 async function sget(){
   if(IN_GAS) return gas('getPlan');
-  const r = await fetch(sync.url+(sync.url.includes('?')?'&':'?')+'key='+encodeURIComponent(sync.key),{cache:'no-store'});
-  return r.json();
+  try{
+    const r = await fetch(sync.url+(sync.url.includes('?')?'&':'?')+'key='+encodeURIComponent(sync.key),{cache:'no-store'});
+    return await r.json();
+  }catch(e){
+    return jsonpGet();
+  }
 }
 async function spost(data){
   if(IN_GAS) return gas('savePlan', JSON.stringify({baseRev:sync.rev,data}));
