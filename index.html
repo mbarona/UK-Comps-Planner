@@ -475,7 +475,7 @@ function render() {
   { const all=S.comps.filter(c=>c.status!=='Dropped'), act=all.filter(passes), n=f=>act.filter(c=>c.format===f).length, dr=S.comps.length-all.length;
     $('ftot').innerHTML='<span class="lbl">'+(filtOn()?'Comps matching the filter':'Comps in plan')+'</span><span class="tt all">Total <b>'+act.length+'</b>'+(filtOn()?' of '+all.length:'')+'</span>'+FORMATS.map(f=>'<span class="tt">'+ICON[f]+esc(f)+' <b>'+n(f)+'</b></span>').join('')+CATS.filter(k=>act.some(c=>c.category===k)).map(k=>'<span class="tt">'+esc(k)+' <b>'+act.filter(c=>c.category===k).length+'</b></span>').join('')+(filtOn()?'<span class="fnote">Filtered: '+esc(filtNames().join(' + '))+'</span>':'')+(dr?'<span class="fnote">'+dr+' dropped not counted</span>':''); }
   $('foot').textContent = usingSeed
-    ? 'Loaded from UK Calendar - Draft 2 (tab Copy of 2026 Calendar UK_v2, hidden rows and columns ignored), week 45 onwards (launches 2 Nov 2026 to 26 Jan 2027). PS = Penny Sweet, AD = Auto Draw, FG = Free Giveaway. Calendar mid-campaign rows are not included. Read-only view, live from the Google Sheet. [Sheet read-only Z]'
+    ? 'Loaded from UK Calendar - Draft 2 (tab Copy of 2026 Calendar UK_v2, hidden rows and columns ignored), week 45 onwards (launches 2 Nov 2026 to 26 Jan 2027). PS = Penny Sweet, AD = Auto Draw, FG = Free Giveaway. Mid-campaign rows are not included. Comps that only appear in an end cell (e.g. Black Friday Instant Smash, Jungle Coin Drop) are added as Tentative with an assumed launch date. Read-only view, live from the Google Sheet. [Sheet read-only Z]'
     : total + ' comps in the plan.';
 }
 
